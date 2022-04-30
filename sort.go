@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
-	"log"
+	"image"
+	"image/color"
+	"image/png"
 	"math/rand"
-	"strings"
+	"os"
 )
 
 type clr struct {
@@ -26,25 +27,29 @@ func main() {
 			}
 		}
 	}
-	fmt.Println("Sorting colors")
-	fmt.Println("This may take a few minutes...")
+	fmt.Println("Sorting colors...")
+	fmt.Println("This may take a few minutes")
 
 	// LONGEST PART OF PROCESS
 	clrs = quicksort(clrs)
 
-	fmt.Println("Creating file...")
-	var lines []string
-
-	// SECOND LONGEST PART OF PROCESS
-	for _, c := range clrs {
-		//fmt.Println(c.r, c.g, c.b)
-		fmt.Printf("\033\r" + toString(int(c.r)) + " " + toString(int(c.g)) + " " + toString(int(c.b)) + " \r")
-		lines = append(lines, toString(int(c.r))+" "+toString(int(c.g))+" "+toString(int(c.b)))
+	// make png
+	fmt.Println("Creating png...")
+	width := 8192
+	height := 1024
+	img := image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
+	for x := 0; x < width; x++ {
+		for y := 0; y < height; y++ {
+			setColor := clrs[x*len(clrs)/width] //color.RGBA{100, 200, 200, 0xff}
+			setColorRGBA := color.RGBA{uint8(setColor.r), uint8(setColor.g), uint8(setColor.b), 0xff}
+			img.Set(x, y, setColorRGBA)
+		}
 	}
-	fmt.Printf("\r\f")
-	writeDataFile("data.txt", lines)
+	// export png
+	f, _ := os.Create("image.png")
+	png.Encode(f, img)
+	f.Close()
 	fmt.Println("Done")
-	//open.StartWith("data.txt", "notepad")
 }
 
 func (c clr) getFactor() float64 { // returns luminance of a color
@@ -70,16 +75,4 @@ func quicksort(in []clr) []clr {
 	quicksort(in[:left])
 	quicksort(in[left+1:])
 	return in
-}
-
-func writeDataFile(filepath string, lines []string) {
-	data := strings.Join(lines, "\n")
-	err := ioutil.WriteFile(filepath, []byte(data), 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func toString(in int) string {
-	return fmt.Sprintf("%d", in)
 }
